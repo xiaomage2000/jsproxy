@@ -1,45 +1,211 @@
 <!doctype html>
 <html>
+
 <head>
-  <title>Page Sandbox</title>
+  <title>Xiaomage's jsproxy在线代理</title>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=0">
+  <link rel="shortcut icon" href="https://xmgspace.me/favicon.ico" type="image/x-icon" />
   <base target="_blank">
   <style>
-    body {
-      padding: 0 0.5em;
+    * {
+      padding: 0;
+      margin: 0;
+      text-shadow: 0 0 5px #fff;
+      font-family: Microsoft Yahei UI Light;
     }
-    .box {
-      margin-top: 1em;
-    }
+
     #txtURL {
       width: 100%;
-      height: 2em;
+      height: 40px;
       text-indent: 0.5em;
-      padding: 0.25em 0;
+      font-family: arial;
     }
+
     #btnGo {
       width: 100%;
+      height: 44px;
       font-size: 1.5em;
+      font-family: arial;
     }
+
     #list a {
       margin: 1em;
     }
+
+    .background {
+      background: rgba(0, 0, 0, 0.3);
+      position: fixed;
+      width: 100%;
+      height: 100%;
+      z-index: -2;
+      transition: background 1.2s;
+    }
+
+    .background-black {
+      position: fixed;
+      width: 100%;
+      height: 100%;
+      z-index: -3;
+      background: #1e2023;
+    }
+
+    .background-picture {
+      position: fixed;
+      width: 100%;
+      height: 100%;
+      z-index: -2;
+      object-fit: cover;
+      display: none;
+    }
+
+    .loading {
+      background: #1e2023;
+      transition: background 1.2s;
+    }
+
+    .title {
+      color: #fff;
+      width: 80%;
+      padding-top: 24vh;
+      padding-left: 10%;
+      font-size: 2.4rem;
+      padding-bottom: 15px;
+      font-family: arial;
+    }
+
+    .input {
+      width: 75%;
+      font-family: arial;
+    }
+
+    .button {
+      width: 15%;
+      font-family: arial;
+    }
+
+    .search {
+      display: flex;
+      width: 80%;
+      margin: 0 auto;
+      justify-content: space-between;
+    }
+
+    .next-picture {
+      position: absolute;
+      right: 2vw;
+      bottom: 2vh;
+      user-select: none;
+      display: flex;
+      color: #fff;
+    }
+
+    .next-picture-text {
+      cursor: pointer;
+    }
+
+    @keyframes rotate {
+      0% {
+        -webkit-transform: rotate(0);
+        transform: rotate(0);
+      }
+
+      50% {
+        -webkit-transform: rotate(180deg);
+        transform: rotate(180deg);
+      }
+
+      100% {
+        -webkit-transform: rotate(360deg);
+        transform: rotate(360deg);
+      }
+    }
+
+    .next-picture-circle {
+      border-radius: 50%;
+      margin: 2px;
+      border: 1.5px solid #fff;
+      border-bottom-color: transparent;
+      height: 12px;
+      width: 12px;
+      background: 0 0 !important;
+      display: inline-block;
+      -webkit-animation: rotate 1s 0s linear infinite;
+      animation: rotate 1s 0s linear infinite;
+    }
+
+    .list {
+      margin: 0 auto;
+      width: 80%;
+      margin-top: 5vh;
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .footer {
+      width: 80%;
+      margin: 0 auto;
+      position: absolute;
+      bottom: 6vh;
+      right: 0;
+      left: 0;
+      text-align: center;
+      color: #fff;
+    }
+
+    a {
+      color: #fff;
+    }
+    
+    @media (max-width: 555px) {
+      .title {
+        color: #fff;
+        width: 80%;
+        padding-top: 16vh;
+        padding-left: 10%;
+        font-size: 2.4rem;
+        padding-bottom: 15px;
+        font-family: arial;
+    }
+  }
   </style>
 </head>
+
 <body>
-  <div class="box">
-    <input id="txtURL" type="text" value="www.google.com" autofocus>
+  <div class="background-black"></div>
+  <img class="background-picture" id="bg_img" src="#">
+  <div class="background loading" id="bg">
+    <div class="main">
+      <div class="title">
+        Xiaomage's jsproxy在线代理
+      </div>
+      <div class="search">
+        <div class="input">
+          <input id="txtURL" type="text" value="" placeholder="请输入你想访问的网址" autofocus>
+        </div>
+        <div class="button">
+          <button id="btnGo">Go!</button>
+        </div>
+      </div>
+      <div style="display: none;">
+        <span>切换线路:</span>
+        <select id="selNode"></select>
+      </div>
+      <div id="list" class="list"></div>
+    </div>
+    <div class="footer">
+      <div>源代码来自<a href="https://github.com/EtherDream/jsproxy">Github</a></div>
+      <div>Deployed by Xiaomage</div>
+    </div>
+    <div class="next-picture" onclick="changePicture();">
+      <div class="next-picture-circle" id="next_picture_circle"></div>
+      <div class="next-picture-text" id="next_picture_text">
+        Change another background&gt;&gt;
+      </div>
+    </div>
   </div>
-  <div class="box">
-    <button id="btnGo">Go</button>
-  </div>
-  <div class="box">
-    <span>切换线路:</span>
-    <select id="selNode"></select>
-  </div>
-  <div class="box" id="list">
-  </div>
+
   <script>
     const PAGE_CONF_SET = 110
     const PAGE_CONF_GET = 111
@@ -56,14 +222,14 @@
     sw.addEventListener('message', onSwMsg)
     sendMsgToSw(PAGE_READY_CHECK)
 
-    btnGo.onclick = function() {
+    btnGo.onclick = function () {
       const text = txtURL.value.trim()
       if (text) {
         const url = './-----' + text
         open(url, '_blank', 'noopener,noreferrer')
       }
     }
-    txtURL.onkeypress = function(e) {
+    txtURL.onkeypress = function (e) {
       if (e.keyCode === 13) {
         btnGo.onclick()
       }
@@ -75,21 +241,21 @@
       const [cmd, msg] = e.data
 
       switch (cmd) {
-      case SW_CONF_RETURN:
-        conf = msg
-        showConf()
-        break
+        case SW_CONF_RETURN:
+          conf = msg
+          showConf()
+          break
 
-      case SW_CONF_CHANGE:
-        conf = msg
-        updateSelected()
-        break
+        case SW_CONF_CHANGE:
+          conf = msg
+          updateSelected()
+          break
 
-      case SW_READY:
-        console.log('sw ready')
-        showIcons()
-        sendMsgToSw(PAGE_CONF_GET)
-        break
+        case SW_READY:
+          console.log('sw ready')
+          showIcons()
+          sendMsgToSw(PAGE_CONF_GET)
+          break
       }
     }
 
@@ -97,7 +263,7 @@
       txtURL.value = err
     }
 
-    selNode.onchange = function() {
+    selNode.onchange = function () {
       const item = this.options[this.selectedIndex]
       const node = item.value
       conf.node_default = node
@@ -115,15 +281,10 @@
 
     const SITE_LIST = [
       ['google', ''],
-      ['youtube', ''],
-      ['twitter', 'twitter.com/google'],
-      ['flickr', ''],
-      ['quora', 'www.quora.com/topic/JavaScript-programming-language'],
-      ['twitch', 'www.twitch.tv/'],
-      ['reddit', ''],
+      ['facebook', 'facebook.com/'],
+      ['twitter', 'twitter.com/'],
       ['wiki', 'zh.wikipedia.org/'],
       ['gist', 'gist.github.com/'],
-      ['facebook', 'facebook.com/Google/'],
       ['blogger', ''],
     ]
 
@@ -133,7 +294,7 @@
         url = url || `www.${id}.com/`
         return `\
 <a rel="noopener noreferrer" href=./-----https://${url}>\
-<img width=128 height=128 src=__sys__/assets/ico/${id}.png></a>`
+<img width=76 height=76 src=__sys__/assets/ico/${id}.png></a>`
       }).join('')
     }
 
@@ -164,5 +325,54 @@
       updateSelected()
     }
   </script>
+
+  <script>
+    var second = 0, delay, first = true;
+    var t = 30;//每张背景图片展示的时间，单位秒
+
+    function changePicture() {
+      document.getElementById('next_picture_text').innerHTML = "Loading..."
+      document.getElementById('next_picture_text').style.cursor = "not-allowed";
+      document.getElementById('next_picture_circle').style.display = "inline-block";
+      document.getElementById('bg').className = "background loading";
+      var xmlhttp;
+      xmlhttp = new XMLHttpRequest();
+      if (first) {
+        xmlhttp.open("GET", "https://xmgspace.me/api/index_picture_first", true);
+        first = false;
+      } else {
+        xmlhttp.open("GET", "https://xmgspace.me/api/index_picture", true);
+      }
+      xmlhttp.onreadystatechange = function () {
+        if (xmlhttp.readyState == 4) {
+          document.getElementById('bg_img').src = xmlhttp.responseText;
+          document.getElementById('bg_img').onload = function () {
+            document.getElementById('bg').className = "background";
+            document.getElementById('bg_img').style.display = "block";
+            document.getElementById('next_picture_circle').style.display = "none";
+            document.getElementById('next_picture_text').innerHTML = "Change another background&gt;&gt;"
+            document.getElementById('next_picture_text').style.cursor = "pointer";
+            second = 0;
+          }
+        }
+      }
+      xmlhttp.send();
+    }
+
+    function init() {
+      changePicture();
+    }
+    window.onload = init();
+
+    function timedCount() {
+      if (second % t == t - 1) {
+        changePicture();
+      }
+      delay = setTimeout("timedCount()", 1000);
+      second++;
+    }
+    timedCount();
+  </script>
 </body>
+
 </html>
